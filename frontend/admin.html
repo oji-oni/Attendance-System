@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Dashboard | Attendance System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container admin-container">
+        <div class="admin-header">
+            <h1>HR Dashboard</h1>
+            <a href="index.html" class="btn-outline" style="text-decoration: none; padding: 10px 20px;">Kiosk Mode</a>
+        </div>
+
+        <div class="card">
+            <h3>Register New Employee</h3>
+            <p style="color: var(--text-muted); margin-bottom: 16px;">Upload a clear headshot to register an employee</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 100px; gap: 12px; align-items: end;">
+                <div>
+                    <label style="display: block; font-size: 0.8rem; margin-bottom: 4px;">Employee ID</label>
+                    <input type="text" id="reg-id" placeholder="EMP123" style="width:100%; padding:12px; background:#0f172a; border:1px solid #334155; border-radius:8px; color:white;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.8rem; margin-bottom: 4px;">Profile Photo</label>
+                    <input type="file" id="reg-file" accept="image/*" style="width:100%; color:var(--text-muted);">
+                </div>
+                <button class="btn-primary" onclick="registerEmployee()" style="padding:12px;">Add</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Recent Attendance</h3>
+            <div id="attendance-table-container">
+                <table id="attendance-table">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Date</th>
+                            <th>In</th>
+                            <th>Out</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendance-body">
+                        <!-- Loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>

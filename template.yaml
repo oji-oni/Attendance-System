@@ -1,0 +1,139 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Contactless Attendance System with Facial Recognition
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: python3.9
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref AttendanceTable
+        CAPTURE_BUCKET: !Ref AttendanceCaptureBucket
+        EMPLOYEE_PROFILE_BUCKET: !Ref EmployeeProfileBucket
+        COLLECTION_ID: attendance-collection
+
+Resources:
+  AttendanceTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: PK
+        Type: String
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  AttendanceCaptureBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteRawImages
+            Status: Enabled
+            ExpirationInDays: 1
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [PUT]
+            AllowedOrigins: ['*']
+
+  EmployeeProfileBucket:
+    Type: AWS::S3::Bucket
+
+  AttendanceReportBucket:
+    Type: AWS::S3::Bucket
+
+  GetPresignedUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers/get_presigned_url.handler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /upload-url
+            Method: get
+      Policies:
+        - S3WritePolicy:
+            BucketName: !Ref AttendanceCaptureBucket
+        - S3WritePolicy:
+            BucketName: !Ref EmployeeProfileBucket
+
+  ProcessAttendanceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers/process_attendance.handler
+      Events:
+        S3Upload:
+          Type: S3
+          Properties:
+            Bucket: !Ref AttendanceCaptureBucket
+            Events: s3:ObjectCreated:*
+        S3Registration:
+          Type: S3
+          Properties:
+            Bucket: !Ref EmployeeProfileBucket
+            Events: s3:ObjectCreated:*
+      Policies:
+        - RekognitionNoPropagationPolicy: {} # Custom or inline
+        - Statement:
+            - Effect: Allow
+              Action:
+                - rekognition:SearchFacesByImage
+                - rekognition:IndexFaces
+              Resource: "*" # Scoped to account in production
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+              Resource: !Sub "arn:aws:s3:::${AttendanceCaptureBucket}/*"
+            - Effect: Allow
+              Action:
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:GetItem
+                - dynamodb:Query
+              Resource: !GetAtt AttendanceTable.Arn
+
+  MarkAbsenteesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers/mark_absentees.handler
+      Events:
+        Schedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(59 23 * * ? *)
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AttendanceTable
+
+  AttendanceApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers/attendance_api.handler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /reports
+            Method: get
+        EmpApi:
+          Type: Api
+          Properties:
+            Path: /employees
+            Method: any
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AttendanceTable
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+  CaptureBucketName:
+    Value: !Ref AttendanceCaptureBucket

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Kiosk | Facial Recognition</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Attendance Kiosk</h1>
+        <p class="subtitle">Position your face and select an action</p>
+
+        <div class="webcam-container">
+            <video id="video" autoplay muted></video>
+            <canvas id="canvas" style="display:none;"></canvas>
+        </div>
+
+        <div class="loading-spinner" id="loader"></div>
+        
+        <div class="controls">
+            <button class="btn-primary" onclick="capture('in')">Check In</button>
+            <button class="btn-outline" onclick="capture('out')">Check Out</button>
+        </div>
+
+        <div id="status" class="status-msg"></div>
+        
+        <div style="margin-top: 40px;">
+            <a href="admin.html" style="color: var(--text-muted); text-decoration: none; font-size: 0.8rem;">HR Dashboard &rarr;</a>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
